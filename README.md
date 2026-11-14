@@ -13,6 +13,9 @@ unfulfilled orders from 4% to 0.9%, but substitutions rose and ratings dropped. 
 | Folder | What it is |
 |---|---|
 | [`notebooks/01_stockout_analysis.ipynb`](notebooks/01_stockout_analysis.ipynb) | The analysis in Python (pandas, Matplotlib): how often orders hit a stock-out, when and where, what happens next, what it costs, and a what-if estimate for each fix |
+| [`specs/001-stockout-substitutes/spec.md`](specs/001-stockout-substitutes/spec.md) | The spec, written before the code: why, who, Given/When/Then scenarios, FR-001–FR-005, success and kill criteria |
+| [`shelfsync/`](shelfsync/) · [`tests/`](tests/) | Tested Python functions: substitute ranking (vegan for vegan) and the stock-out metrics. Tests were committed first (red), then the code (green): `python -m pytest -q` |
+| [`docs/adr/`](docs/adr/) · [`research/ledger.csv`](research/ledger.csv) | Decision records, and an evidence ledger where every number has a source, date and kind |
 | [`data/`](data/) | `generate_data.py` creates the **synthetic** dataset `order_lines.csv` (4 weeks, 8 Barcelona stores, 5,433 orders) |
 | [`docs/`](docs/) | The project PRD (problem statement, scope, process diagrams, decision log, research log) |
 | [`prototype/shelf-sync.html`](prototype/shelf-sync.html) | Interactive concept prototype: customer app and store tablet with the three fixes as switches, plus a 300-order simulator. Open it in any browser |
@@ -42,6 +45,7 @@ and design an A/B test for each fix.
 ```bash
 pip install -r requirements.txt
 cd data && python generate_data.py && cd ..
+python -m pytest -q
 jupyter notebook notebooks/01_stockout_analysis.ipynb
 ```
 
