@@ -1,0 +1,485 @@
+<title>Shelf Sync Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: control strip of three fix switches, then customer phone beside store tablet, then a simulator comparing fixes over 300 orders. */
+:root {
+  --bg: #F2F5F4; --surface: #FFFFFF; --surface-2: #E9EEEC; --ink: #13201C; --muted: #56635F; --line: #D3DCD9;
+  --accent: #0E7C66; --accent-soft: #DCF1EA; --accent-ink: #FFFFFF;
+  --warn: #9A5B00; --warn-soft: #FCEFD7; --crit: #B1222B; --crit-soft: #FBE3E4; --good: #1D6F3A; --good-soft: #E0F2E5;
+  --bar-base: #9AA7A3;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --text: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1412; --surface: #161F1C; --surface-2: #1E2925; --ink: #E5EDEA; --muted: #9AA8A3; --line: #2B3833;
+    --accent: #3CC4A4; --accent-soft: #15372F; --accent-ink: #04201A;
+    --warn: #F0B04A; --warn-soft: #382A10; --crit: #F2747B; --crit-soft: #3B1A1D; --good: #62D48D; --good-soft: #14321E;
+    --bar-base: #5F6E69; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1412; --surface: #161F1C; --surface-2: #1E2925; --ink: #E5EDEA; --muted: #9AA8A3; --line: #2B3833;
+  --accent: #3CC4A4; --accent-soft: #15372F; --accent-ink: #04201A;
+  --warn: #F0B04A; --warn-soft: #382A10; --crit: #F2747B; --crit-soft: #3B1A1D; --good: #62D48D; --good-soft: #14321E;
+  --bar-base: #5F6E69; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--text); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 2.1rem; font-weight: 700; }
+h2 { font-size: 1.35rem; font-weight: 600; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 600; }
+.lead { color: var(--muted); max-width: 68ch; }
+header { display: grid; gap: 8px; }
+.howto { display: flex; gap: 10px; align-items: flex-start; background: var(--surface-2); border-radius: 10px; padding: 10px 14px; max-width: 78ch; color: var(--ink); }
+.howto b { font-family: var(--display); white-space: nowrap; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, [role="switch"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Fix switches */
+.fixes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 12px; align-items: stretch; }
+.fix { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.fix[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.track { grid-row: span 2; width: 38px; height: 22px; border-radius: 11px; background: var(--line); position: relative; margin-top: 2px; transition: background .15s; }
+.track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.fix[aria-checked="true"] .track { background: var(--accent); }
+.fix[aria-checked="true"] .track::after { transform: translateX(16px); }
+.fix-name { font-family: var(--display); font-weight: 600; font-size: 0.98rem; }
+.fix-desc { color: var(--muted); font-size: 0.82rem; }
+.reset { align-self: center; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 14px; font-weight: 600; white-space: nowrap; }
+.reset:hover { border-color: var(--accent); }
+
+/* Stage */
+.stage { display: grid; grid-template-columns: minmax(0, 370px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.panel-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.phone { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: 18px 16px 20px; display: grid; gap: 14px; }
+.storebar { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.storebar .name { font-family: var(--display); font-weight: 700; font-size: 1.1rem; }
+.storebar .eta { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chips .lbl { color: var(--muted); font-size: 0.8rem; margin-right: 2px; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 11px; font-size: 0.8rem; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.products { display: grid; gap: 2px; }
+.prod { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.prod:last-child { border-bottom: 0; }
+.prod .pname { font-weight: 500; }
+.tags { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: 1px; }
+.tag { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.02em; padding: 1px 6px; border-radius: 4px; background: var(--good-soft); color: var(--good); }
+.tag.gf { background: var(--surface-2); color: var(--muted); }
+.price { color: var(--muted); font-size: 0.85rem; }
+.add { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-weight: 700; line-height: 1; }
+.add:hover { background: var(--accent); color: var(--accent-ink); }
+.hidden-note { color: var(--muted); font-size: 0.78rem; font-style: italic; padding-top: 4px; }
+.basket { background: var(--surface-2); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+.bline { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; font-size: 0.86rem; }
+.bline.gone { color: var(--muted); text-decoration: line-through; }
+.qty { display: inline-flex; align-items: center; gap: 6px; }
+.qty button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); line-height: 1; }
+.btotal { display: flex; justify-content: space-between; font-weight: 600; border-top: 1px solid var(--line); padding-top: 8px; }
+.cta { width: 100%; border: 0; border-radius: 12px; padding: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 0.95rem; }
+.cta:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+.empty { color: var(--muted); font-size: 0.85rem; }
+.order-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 10px; }
+.order-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.offer { border-radius: 10px; padding: 10px; background: var(--warn-soft); display: grid; gap: 8px; }
+.offer.fit { background: var(--accent-soft); }
+.offer p { font-size: 0.86rem; }
+.offer .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.offer button { border-radius: 8px; padding: 6px 12px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); }
+.offer button.accept { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.flag { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
+.flag.bad { background: var(--crit-soft); color: var(--crit); }
+.flag.ok { background: var(--good-soft); color: var(--good); }
+.lines { display: grid; gap: 4px; font-size: 0.84rem; }
+.lines li { display: flex; justify-content: space-between; gap: 8px; }
+.lines ul, ul.lines { list-style: none; margin: 0; padding: 0; }
+
+/* Tablet */
+.tablet { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.tablet-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.counter { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.counter .v { font-family: var(--mono); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.counter .k { color: var(--muted); font-size: 0.74rem; }
+.alerts { display: grid; gap: 8px; }
+.alert { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 9px 12px; border-radius: 10px; background: var(--warn-soft); border-left: 3px solid var(--warn); }
+.alert.out { background: var(--crit-soft); border-left-color: var(--crit); }
+.alert.info { background: var(--surface-2); border-left-color: var(--muted); }
+.alert .t { font-size: 0.86rem; }
+.alert .t b { font-weight: 600; }
+.alert .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.alert button, .mini { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 4px 10px; font-size: 0.8rem; font-weight: 600; }
+.alert button:hover, .mini:hover { border-color: var(--accent); }
+.alerts-off { color: var(--muted); font-size: 0.84rem; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+tr.stale td { background: var(--crit-soft); }
+.pill { display: inline-block; font-size: 0.74rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.listed { background: var(--good-soft); color: var(--good); }
+.pill.low { background: var(--warn-soft); color: var(--warn); }
+.pill.stale { background: var(--crit); color: var(--surface); }
+.pill.hidden { background: var(--surface-2); color: var(--muted); }
+.orders { display: grid; gap: 6px; }
+.olog { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 0.84rem; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.olog:last-child { border-bottom: 0; }
+.status { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.status.complete { background: var(--good-soft); color: var(--good); }
+.status.sub { background: var(--accent-soft); color: var(--accent); }
+.status.partial { background: var(--crit-soft); color: var(--crit); }
+.status.wait { background: var(--warn-soft); color: var(--warn); }
+.two { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; }
+
+/* Simulator */
+.sim { display: grid; gap: 16px; }
+.sim-head { display: grid; gap: 6px; }
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.metric .mh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.metric .dir { color: var(--muted); font-size: 0.75rem; }
+.bars { display: grid; gap: 7px; }
+.bar { display: grid; grid-template-columns: 132px minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 0.82rem; }
+.bar .lab { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar.current .lab { color: var(--ink); font-weight: 600; }
+.bar .trackb { height: 14px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width .4s ease; }
+.bar.base .fill { background: var(--bar-base); }
+.bar .val { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.assume { color: var(--muted); font-size: 0.8rem; max-width: 90ch; }
+footer { color: var(--muted); font-size: 0.78rem; border-top: 1px solid var(--line); padding-top: 14px; }
+
+@media (max-width: 920px) {
+  .fixes { grid-template-columns: 1fr; }
+  .reset { justify-self: start; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .metrics { grid-template-columns: minmax(0, 1fr); }
+  .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bar { grid-template-columns: minmax(0, 1fr) 56px; }
+  .bar .lab { grid-column: 1 / -1; }
+  h1 { font-size: 1.7rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Concept prototype · stock-outs and substitutions</span>
+    <h1>Shelf Sync</h1>
+    <p class="lead">Three fixes for orders that hit an out-of-stock item on a delivery app: keep online stock in sync with the shelf, warn the store before an item runs out, and offer substitutes that fit what the customer wants.</p>
+    <div class="howto"><b>Try it</b><span>Place the vegan shopper's order with every fix off. The plant burgers and oat drink are listed online, but the shelf is empty. Then switch the fixes on and press Reset store to compare.</span></div>
+  </header>
+
+  <section class="fixes" aria-label="Fixes">
+    <button class="fix" role="switch" aria-checked="false" id="fix-sync" data-fix="sync"><span class="track" aria-hidden="true"></span><span class="fix-name">1 · Live stock sync</span><span class="fix-desc">Items with nothing on the shelf are hidden online automatically.</span></button>
+    <button class="fix" role="switch" aria-checked="false" id="fix-alerts" data-fix="alerts"><span class="track" aria-hidden="true"></span><span class="fix-name">2 · Low-stock alerts</span><span class="fix-desc">The store is warned at the last 1–2 units, so it restocks or hides the item.</span></button>
+    <button class="fix" role="switch" aria-checked="false" id="fix-diet" data-fix="diet"><span class="track" aria-hidden="true"></span><span class="fix-name">3 · Intent-aware substitutes</span><span class="fix-desc">Substitutes match the shopper's preference, such as vegan for vegan.</span></button>
+    <button class="reset" id="reset">Reset store</button>
+  </section>
+
+  <section class="stage">
+    <div>
+      <div class="panel-label">Customer app</div>
+      <div class="phone" id="phone"></div>
+    </div>
+    <div>
+      <div class="panel-label">Store tablet</div>
+      <div class="tablet" id="tablet"></div>
+    </div>
+  </section>
+
+  <section class="sim" aria-labelledby="sim-title">
+    <div class="sim-head">
+      <span class="eyebrow">Simulation</span>
+      <h2 id="sim-title">What each fix changes over 300 orders</h2>
+      <p class="lead">Each scenario runs the same 300 simulated orders five times and shows the average. The scenario that matches your switches is in bold.</p>
+    </div>
+    <div class="metrics" id="metrics"></div>
+    <p class="assume">Assumptions, all made up for illustration: one grocery store with 13 items; 25% of shoppers are vegan and 15% gluten-free; each order has 1–3 items; the store restocks every 25 orders; on about one order in four, an item leaves the shelf without the system knowing (damage, miscount, walk-in sale); stores act on 60% of low-stock alerts; 85% of shoppers accept a substitute that fits their preference and 10% accept one that does not. Use it to compare the fixes, not to predict real figures.</p>
+  </section>
+
+  <footer>Concept prototype for a project proposal on stock-outs and substitutions. The store, items, prices and numbers are made up. Not a Glovo product and not affiliated with Glovo.</footer>
+</div>
+
+<script>
+(function () {
+  const ITEMS = [
+    { id: "oat", name: "Oat drink 1 L", group: "milk", tags: ["vegan"], price: 1.95, start: 0, base: 6 },
+    { id: "whole", name: "Whole milk 1 L", group: "milk", tags: ["gf"], price: 1.15, start: 6, base: 10 },
+    { id: "almond", name: "Almond drink 1 L", group: "milk", tags: ["vegan", "gf"], price: 2.10, start: 3, base: 6 },
+    { id: "vpatty", name: "Plant burgers ×2", group: "burger", tags: ["vegan"], price: 3.80, start: 0, base: 4 },
+    { id: "bpatty", name: "Beef burgers ×2", group: "burger", tags: [], price: 3.50, start: 4, base: 6 },
+    { id: "tofu", name: "Firm tofu 400 g", group: "protein", tags: ["vegan", "gf"], price: 2.40, start: 2, base: 5 },
+    { id: "chicken", name: "Chicken breast 500 g", group: "protein", tags: ["gf"], price: 4.90, start: 5, base: 6 },
+    { id: "sourdough", name: "Sourdough loaf", group: "bread", tags: ["vegan"], price: 2.80, start: 3, base: 6 },
+    { id: "gfbread", name: "Gluten-free loaf", group: "bread", tags: ["vegan", "gf"], price: 3.40, start: 2, base: 4 },
+    { id: "hummus", name: "Hummus 200 g", group: "dip", tags: ["vegan", "gf"], price: 1.90, start: 4, base: 6 },
+    { id: "tzatziki", name: "Tzatziki 200 g", group: "dip", tags: ["gf"], price: 2.10, start: 3, base: 5 },
+    { id: "greek", name: "Greek yogurt 500 g", group: "yogurt", tags: ["gf"], price: 2.30, start: 4, base: 6 },
+    { id: "coco", name: "Coconut yogurt 400 g", group: "yogurt", tags: ["vegan", "gf"], price: 2.90, start: 1, base: 4 }
+  ];
+  const BY = Object.fromEntries(ITEMS.map(i => [i.id, i]));
+  const DIETS = { none: "No preference", vegan: "Vegan", gf: "Gluten-free" };
+  const eur = n => "€" + n.toFixed(2);
+  const fits = (item, diet) => diet === "none" || item.tags.includes(diet);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function chooseSub(item, diet, dietAware, stock) {
+    let cands = ITEMS.filter(i => i.group === item.group && i.id !== item.id && stock[i.id] > 0);
+    if (dietAware) {
+      cands = cands.filter(i => fits(i, diet));
+      cands.sort((a, b) => Math.abs(a.price - item.price) - Math.abs(b.price - item.price));
+    }
+    return cands[0] || null;
+  }
+
+  const S = { fix: { sync: false, alerts: false, diet: false } };
+  function resetStore() {
+    S.stock = Object.fromEntries(ITEMS.map(i => [i.id, i.start]));
+    S.hidden = new Set();
+    S.orders = [];
+    S.current = null;
+    S.counters = { orders: 0, stockouts: 0, accepted: 0, refunded: 0 };
+    S.diet = "vegan";
+    S.basket = { vpatty: 1, oat: 1, hummus: 1 };
+    S.nextNo = 1041;
+  }
+  const visible = id => !S.hidden.has(id) && (!S.fix.sync || S.stock[id] > 0);
+
+  function placeOrder() {
+    const lines = [];
+    for (const [id, q] of Object.entries(S.basket)) {
+      if (!visible(id)) continue;
+      for (let k = 0; k < q; k++) {
+        if (S.stock[id] > 0) { S.stock[id]--; lines.push({ id, status: "ok" }); }
+        else {
+          S.counters.stockouts++;
+          const sub = chooseSub(BY[id], S.diet, S.fix.diet, S.stock);
+          if (sub) { S.stock[sub.id]--; lines.push({ id, status: "offer", sub: sub.id }); }
+          else { lines.push({ id, status: "removed" }); S.counters.refunded += BY[id].price; }
+        }
+      }
+    }
+    if (!lines.length) return;
+    const order = { no: S.nextNo++, diet: S.diet, lines };
+    S.orders.unshift(order);
+    S.current = order;
+    S.counters.orders++;
+    S.basket = {};
+    render();
+  }
+  function decide(i, accept) {
+    const line = S.current.lines[i];
+    if (!line || line.status !== "offer") return;
+    if (accept) { line.status = "subbed"; S.counters.accepted++; }
+    else { line.status = "refunded"; S.stock[line.sub]++; S.counters.refunded += BY[line.id].price; }
+    render();
+  }
+  function outcome(o) {
+    const st = o.lines.map(l => l.status);
+    if (st.includes("offer")) return ["wait", "Waiting for customer"];
+    if (st.includes("removed") || st.includes("refunded")) return ["partial", "Partial, refund"];
+    if (st.includes("subbed")) return ["sub", "Substituted"];
+    return ["complete", "Complete"];
+  }
+  function tagsHTML(item) {
+    return '<span class="tags">' + item.tags.map(t => t === "vegan" ? '<span class="tag">Vegan</span>' : '<span class="tag gf">GF</span>').join("") + "</span>";
+  }
+
+  function renderPhone() {
+    const el = document.getElementById("phone");
+    const shown = ITEMS.filter(i => visible(i.id));
+    const hiddenCount = ITEMS.length - shown.length;
+    const pending = S.current && S.current.lines.some(l => l.status === "offer");
+    let total = 0, orderable = 0;
+    const bl = Object.entries(S.basket).map(([id, q]) => {
+      const it = BY[id], ok = visible(id);
+      if (ok) { total += it.price * q; orderable += q; }
+      return `<div class="bline ${ok ? "" : "gone"}"><span>${esc(it.name)}${ok ? "" : " · sold out, removed at checkout"}</span>
+        <span class="qty"><button data-dec="${id}" aria-label="Remove one ${esc(it.name)}">−</button><span class="mono">${q}</span><button data-inc="${id}" aria-label="Add one ${esc(it.name)}">+</button></span>
+        <span class="mono">${eur(it.price * q)}</span></div>`;
+    }).join("");
+    let card = "";
+    if (S.current) {
+      const o = S.current, [cls, label] = outcome(o);
+      const items = o.lines.map((l, i) => {
+        const it = BY[l.id];
+        if (l.status === "offer") {
+          const sub = BY[l.sub], ok = fits(sub, o.diet);
+          const flag = o.diet === "none" ? "" : ok ? `<span class="flag ok">Fits ${DIETS[o.diet].toLowerCase()}</span>` : `<span class="flag bad">Not ${DIETS[o.diet].toLowerCase()}</span>`;
+          return `<div class="offer ${ok ? "fit" : ""}"><p><b>${esc(it.name)}</b> is out of stock. The store suggests <b>${esc(sub.name)}</b> (${eur(sub.price)}). ${flag}</p>
+            <div class="row"><button class="accept" data-acc="${i}">Accept substitute</button><button data-ref="${i}">Refund item</button></div></div>`;
+        }
+        const txt = { ok: "Packed", subbed: "Substituted with " + (l.sub ? esc(BY[l.sub].name) : ""), refunded: "Refunded " + eur(it.price), removed: "Out of stock, refunded " + eur(it.price) }[l.status];
+        return `<li><span>${esc(it.name)}</span><span style="color:var(--muted)">${txt}</span></li>`;
+      });
+      const offers = items.filter(x => x.startsWith("<div")).join("");
+      const rest = items.filter(x => x.startsWith("<li")).join("");
+      card = `<div class="order-card"><div class="order-head"><h3>Order #${o.no}</h3><span class="status ${cls}">${label}</span></div>${offers}${rest ? `<ul class="lines">${rest}</ul>` : ""}</div>`;
+    }
+    el.innerHTML = `
+      <div class="storebar"><span class="name">Corner Market · Gràcia</span><span class="eta">25–35 min</span></div>
+      <div class="chips" role="group" aria-label="Shopping preference"><span class="lbl">Shopping as</span>${Object.entries(DIETS).map(([k, v]) => `<button class="chip" id="diet-${k}" aria-pressed="${S.diet === k}" data-diet="${k}">${v}</button>`).join("")}</div>
+      <div class="products">${shown.map(i => `<div class="prod"><span><span class="pname">${esc(i.name)}</span>${tagsHTML(i)}</span><span class="price mono">${eur(i.price)}</span><button class="add" data-inc="${i.id}" aria-label="Add ${esc(i.name)}">+</button></div>`).join("")}
+        ${hiddenCount ? `<div class="hidden-note">${hiddenCount} sold-out item${hiddenCount > 1 ? "s" : ""} hidden</div>` : ""}</div>
+      <div class="basket"><h3>Basket</h3>${bl || '<p class="empty">Your basket is empty. Add items above.</p>'}
+        <div class="btotal"><span>Total</span><span class="mono">${eur(total)}</span></div>
+        <button class="cta" id="place" ${orderable && !pending ? "" : "disabled"}>${pending ? "Answer the substitute first" : "Place order"}</button></div>
+      ${card}`;
+  }
+
+  function alertsFor() {
+    if (!S.fix.alerts) return null;
+    const out = [];
+    ITEMS.forEach(i => {
+      if (S.hidden.has(i.id)) return;
+      const s = S.stock[i.id];
+      if (s === 0 && !S.fix.sync) out.push({ i, cls: "out", text: `<b>${esc(i.name)}</b>: none on the shelf, but still listed online` });
+      else if (s === 0) out.push({ i, cls: "info", text: `<b>${esc(i.name)}</b>: sold out, hidden online automatically` });
+      else if (s <= 2) out.push({ i, cls: "", text: `<b>${esc(i.name)}</b>: only ${s} left` });
+    });
+    return out;
+  }
+
+  function renderTablet() {
+    const el = document.getElementById("tablet");
+    const c = S.counters;
+    const al = alertsFor();
+    const alertsHTML = al === null
+      ? '<p class="alerts-off">Low-stock alerts are off. The store finds out about empty shelves when an order arrives.</p>'
+      : al.length ? al.map(a => `<div class="alert ${a.cls}"><span class="t">${a.text}</span><span class="acts"><button data-restock="${a.i.id}">Restock +6</button>${a.cls === "info" ? "" : `<button data-hide="${a.i.id}">Hide online</button>`}</span></div>`).join("")
+      : '<p class="alerts-off">No alerts. Every listed item has at least 3 on the shelf.</p>';
+    const rows = ITEMS.map(i => {
+      const s = S.stock[i.id];
+      let pill, cls = "";
+      if (S.hidden.has(i.id)) pill = '<span class="pill hidden">Hidden by store</span>';
+      else if (s === 0 && S.fix.sync) pill = '<span class="pill hidden">Hidden, sold out</span>';
+      else if (s === 0) { pill = '<span class="pill stale">Listed, 0 on shelf</span>'; cls = "stale"; }
+      else if (s <= 2) pill = '<span class="pill low">Listed, low</span>';
+      else pill = '<span class="pill listed">Listed</span>';
+      const act = S.hidden.has(i.id) ? `<button class="mini" data-show="${i.id}">Show online</button>` : "";
+      return `<tr class="${cls}"><td>${esc(i.name)}${tagsHTML(i)}</td><td class="num">${s}</td><td>${pill}</td><td>${act}</td></tr>`;
+    }).join("");
+    const log = S.orders.length ? S.orders.slice(0, 6).map(o => {
+      const [cls, label] = outcome(o);
+      const names = o.lines.map(l => BY[l.id].name.split(" ")[0]).join(", ");
+      return `<div class="olog"><span class="mono">#${o.no}</span><span>${esc(names)} <span style="color:var(--muted)">· ${DIETS[o.diet]}</span></span><span class="status ${cls}">${label}</span></div>`;
+    }).join("") : '<p class="empty">No orders yet. Place one from the customer app.</p>';
+    el.innerHTML = `
+      <div class="tablet-head"><h3>Corner Market · store tablet</h3><span style="color:var(--muted);font-size:.8rem">Shelf counts update as orders are packed</span></div>
+      <div class="counters">
+        <div class="counter"><div class="v">${c.orders}</div><div class="k">Orders</div></div>
+        <div class="counter"><div class="v">${c.stockouts}</div><div class="k">Items out of stock</div></div>
+        <div class="counter"><div class="v">${c.accepted}</div><div class="k">Substitutes accepted</div></div>
+        <div class="counter"><div class="v">${eur(c.refunded)}</div><div class="k">Refunded</div></div>
+      </div>
+      <div class="alerts"><h3>Alerts</h3>${alertsHTML}</div>
+      <div class="two">
+        <div><h3 style="margin-bottom:6px">Stock</h3><div class="tablewrap"><table><thead><tr><th>Item</th><th style="text-align:right">Shelf</th><th>Online</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>
+        <div><h3 style="margin-bottom:6px">Recent orders</h3><div class="orders">${log}</div></div>
+      </div>`;
+  }
+
+  // Simulation
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function simulate(fix, seed) {
+    const r = mulberry32(seed), N = 300;
+    const shelf = {}, sys = {}, alerted = new Set();
+    ITEMS.forEach(i => { shelf[i.id] = i.base; sys[i.id] = i.base; });
+    let hit = 0, offered = 0, unwanted = 0, accepted = 0, refunded = 0;
+    for (let o = 0; o < N; o++) {
+      if (o > 0 && o % 25 === 0) { ITEMS.forEach(i => { shelf[i.id] = Math.max(shelf[i.id], i.base); sys[i.id] = shelf[i.id]; }); alerted.clear(); }
+      if (r() < 0.25) { const it = ITEMS[Math.floor(r() * ITEMS.length)]; if (shelf[it.id] > 0) shelf[it.id]--; }
+      const u = r(), diet = u < 0.25 ? "vegan" : u < 0.4 ? "gf" : "none";
+      const pool = ITEMS.filter(i => fits(i, diet) && (!fix.sync || sys[i.id] > 0));
+      const n = 1 + Math.floor(r() * 3), basket = [];
+      for (let k = 0; k < n && pool.length; k++) basket.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+      let orderHit = false;
+      for (const it of basket) {
+        if (shelf[it.id] > 0) { shelf[it.id]--; sys[it.id] = Math.max(0, sys[it.id] - 1); continue; }
+        orderHit = true;
+        const sub = chooseSub(it, diet, fix.diet, shelf);
+        if (!sub) { refunded += it.price; continue; }
+        offered++; shelf[sub.id]--; sys[sub.id] = Math.max(0, sys[sub.id] - 1);
+        const ok = fits(sub, diet);
+        if (!ok) unwanted++;
+        if (r() < (ok ? 0.85 : 0.1)) accepted++;
+        else { refunded += it.price; shelf[sub.id]++; sys[sub.id]++; }
+      }
+      if (orderHit) hit++;
+      if (fix.alerts) ITEMS.forEach(i => {
+        if (sys[i.id] <= 2 && !alerted.has(i.id)) { alerted.add(i.id); if (r() < 0.6) { shelf[i.id] += 6; sys[i.id] = shelf[i.id]; alerted.delete(i.id); } }
+      });
+    }
+    return { hit: hit / N * 100, unwanted, accept: offered ? accepted / offered * 100 : 0, refund: refunded / N * 100 };
+  }
+  const SCEN = [
+    { label: "No fixes", fix: { sync: false, alerts: false, diet: false }, base: true },
+    { label: "1 · Stock sync", fix: { sync: true, alerts: false, diet: false } },
+    { label: "1 + 2 · plus alerts", fix: { sync: true, alerts: true, diet: false } },
+    { label: "1 + 2 + 3 · all fixes", fix: { sync: true, alerts: true, diet: true } }
+  ];
+  const SEEDS = [11, 23, 37, 51, 73];
+  const RESULTS = SCEN.map(s => {
+    const runs = SEEDS.map(seed => simulate(s.fix, seed));
+    const avg = k => runs.reduce((a, b) => a + b[k], 0) / runs.length;
+    return { hit: avg("hit"), unwanted: avg("unwanted"), accept: avg("accept"), refund: avg("refund") };
+  });
+  const METRICS = [
+    { k: "hit", title: "Orders hit by a stock-out", dir: "Lower is better", fmt: v => v.toFixed(1) + "%" },
+    { k: "unwanted", title: "Substitutes that don't fit the shopper", dir: "Lower is better · per 300 orders", fmt: v => v.toFixed(0) },
+    { k: "accept", title: "Substitutes accepted", dir: "Higher is better", fmt: v => v.toFixed(0) + "%" },
+    { k: "refund", title: "Refunded per 100 orders", dir: "Lower is better", fmt: v => "€" + v.toFixed(0) }
+  ];
+  function renderSim() {
+    const same = f => SCEN.findIndex(s => s.fix.sync === f.sync && s.fix.alerts === f.alerts && s.fix.diet === f.diet);
+    const cur = same(S.fix);
+    document.getElementById("metrics").innerHTML = METRICS.map(m => {
+      const max = Math.max(...RESULTS.map(r => r[m.k])) || 1;
+      return `<div class="metric"><div class="mh"><h3>${m.title}</h3><span class="dir">${m.dir}</span></div><div class="bars">${SCEN.map((s, i) => {
+        const v = RESULTS[i][m.k];
+        return `<div class="bar ${s.base ? "base" : ""} ${i === cur ? "current" : ""}"><span class="lab">${s.label}</span><span class="trackb"><span class="fill" style="width:${(v / max * 100).toFixed(1)}%"></span></span><span class="val">${m.fmt(v)}</span></div>`;
+      }).join("")}</div></div>`;
+    }).join("");
+  }
+
+  function render() {
+    document.querySelectorAll(".fix").forEach(b => b.setAttribute("aria-checked", String(S.fix[b.dataset.fix])));
+    renderPhone(); renderTablet(); renderSim();
+  }
+
+  document.addEventListener("click", e => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    const d = t.dataset;
+    if (d.fix) { S.fix[d.fix] = !S.fix[d.fix]; render(); return; }
+    if (t.id === "reset") { resetStore(); render(); return; }
+    if (t.id === "place") { placeOrder(); return; }
+    if (d.diet) { S.diet = d.diet; render(); return; }
+    if (d.inc) { S.basket[d.inc] = (S.basket[d.inc] || 0) + 1; render(); return; }
+    if (d.dec) { S.basket[d.dec]--; if (S.basket[d.dec] <= 0) delete S.basket[d.dec]; render(); return; }
+    if (d.acc) { decide(+d.acc, true); return; }
+    if (d.ref) { decide(+d.ref, false); return; }
+    if (d.restock) { S.stock[d.restock] += 6; render(); return; }
+    if (d.hide) { S.hidden.add(d.hide); render(); return; }
+    if (d.show) { S.hidden.delete(d.show); render(); return; }
+  });
+
+  resetStore();
+  render();
+})();
+</script>

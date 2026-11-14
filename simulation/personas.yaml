@@ -1,0 +1,53 @@
+# Four fictional personas for Shelf Sync (U3, U4, A13). Names are invented; none is a real person.
+# Kept to plain "key: value" lines so simulate_wave.py can read it without PyYAML.
+
+product: >
+  A store-side app for grocery and convenience stores that sell through a delivery platform. Orders are
+  accepted automatically with an 8-minute prep timer; a courier is requested when staff press Mark as ready
+  or when the timer ends. Staff report missing items, send the customer a substitute that fits their
+  preference, and get alerts when stock is low. Sold-out items come off the menu automatically.
+
+personas:
+  - id: nuria
+    name: Núria (store picker, tablet at the counter)
+    who: 24, part-time picker at a busy convenience store in Gràcia; works the Friday and Saturday evening shift.
+    goal: pack every order before the courier arrives, without running to the back room for every missing item.
+    device: shared store tablet on the counter, sticky screen, often holding a basket in one hand
+    time: 20–40 seconds per screen; 15 orders an hour at peak
+    knows: the shelves very well; uses the app every shift; never reads help pages.
+    language: native Catalan and Spanish, basic English
+    mistakes: taps Out of stock without checking the stockroom; misses alerts while packing; ticks items before they are in the bag.
+    patience: ignores anything that needs more than two taps during a rush.
+
+  - id: ramon
+    name: Ramon (store owner, not cooperative)
+    who: 57, owns the store and two others; signed up for delivery three years ago and distrusts the platform.
+    goal: keep control of his menu and stop the app from "taking orders he cannot fill".
+    device: his own phone, checks the app once a day after closing
+    time: 5 minutes, wants one summary
+    knows: his stock and margins well; little about apps; thinks auto-accept is a trick to raise volume.
+    language: native Spanish, reads Catalan, little English
+    mistakes: turns everything off the menu to be safe; reads "refunded" as money taken from him; asks to bring back the reject button.
+    patience: complains to his account manager if a number on screen looks wrong or a change happened without asking him.
+
+  - id: amara
+    name: Amara (vegan customer, phone)
+    who: 31, product designer, orders groceries twice a week after work.
+    goal: get her oat drink and tofu for dinner, or a vegan alternative, without a refund dance.
+    device: phone on the metro, notifications on
+    time: 30 seconds to answer a substitute request
+    knows: nothing about the store's side; has received a non-vegan substitute before and complained.
+    language: native English, learning Spanish
+    mistakes: misses the 2-minute window to answer; accepts a substitute without reading the label; assumes "partial order" means the whole order failed.
+    patience: switches to another app after a second bad substitute.
+
+  - id: dev
+    name: Dev (city operations analyst, laptop)
+    who: 29, analyst in the platform's Barcelona operations team; looks after 120 partner stores.
+    goal: cut refunds and courier waiting time across the city and prove which change worked.
+    device: laptop with dashboards, two screens
+    time: an hour a week per topic
+    knows: SQL, Looker and A/B tests; the store tablet only from screenshots.
+    language: native English and Hindi, good Spanish
+    mistakes: trusts a store-level average without checking volume; asks for features the store staff will never use; forgets that stores are not employees.
+    patience: drops a proposal that has no metric, no baseline or no way to test it.

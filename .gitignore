@@ -1,0 +1,6 @@
+.ipynb_checkpoints/
+__pycache__/
+.DS_Store
+# Glovo-styled store app concept and private notes are kept out on purpose
+*store-app-concept*
+*PRIVATE*
