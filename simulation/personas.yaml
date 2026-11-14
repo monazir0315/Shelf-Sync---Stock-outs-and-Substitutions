@@ -10,6 +10,7 @@ product: >
 personas:
   - id: nuria
     name: Núria (store picker, tablet at the counter)
+    segment: staff at hand-updated convenience stores, evening peak
     who: 24, part-time picker at a busy convenience store in Gràcia; works the Friday and Saturday evening shift.
     goal: pack every order before the courier arrives, without running to the back room for every missing item.
     device: shared store tablet on the counter, sticky screen, often holding a basket in one hand
@@ -21,6 +22,8 @@ personas:
 
   - id: ramon
     name: Ramon (store owner, not cooperative)
+    segment: owners of small independent stores
+    cooperative: false
     who: 57, owns the store and two others; signed up for delivery three years ago and distrusts the platform.
     goal: keep control of his menu and stop the app from "taking orders he cannot fill".
     device: his own phone, checks the app once a day after closing
@@ -32,6 +35,7 @@ personas:
 
   - id: amara
     name: Amara (vegan customer, phone)
+    segment: customers with a stated preference (vegan, gluten-free)
     who: 31, product designer, orders groceries twice a week after work.
     goal: get her oat drink and tofu for dinner, or a vegan alternative, without a refund dance.
     device: phone on the metro, notifications on
@@ -43,6 +47,7 @@ personas:
 
   - id: dev
     name: Dev (city operations analyst, laptop)
+    segment: platform operations team (not the main user)
     who: 29, analyst in the platform's Barcelona operations team; looks after 120 partner stores.
     goal: cut refunds and courier waiting time across the city and prove which change worked.
     device: laptop with dashboards, two screens

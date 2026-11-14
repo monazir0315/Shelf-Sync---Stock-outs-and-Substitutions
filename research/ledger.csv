@@ -1,0 +1,11 @@
+id,claim,value,source,as_of,kind,grade,notes
+L01,Glovo countries of operation,about 23,https://about.glovoapp.com/press/glovo-celebrates-10-years,2025,reported,B,Company press page
+L02,Quick commerce share of Delivery Hero GMV,about 18%,https://www.marketbeat.com/instant-alerts/delivery-hero-q1-earnings-call-highlights-2026-04-30/,2026-04-30,reported,B,Earnings call summary; check investor site before quoting
+L03,Quick commerce growth (Delivery Hero),about 30%,https://www.marketbeat.com/instant-alerts/delivery-hero-q1-earnings-call-highlights-2026-04-30/,2026-04-30,reported,B,Same source as L02
+L04,Glovo prep time can be raised only before accepting,yes,https://sell.glovoapp.com/ng/en/?p=703,2026-11-14,reported,B,Regional partner help page
+L05,Unfulfilled delivery orders at a UK retailer after blocking rejections,4% to 0.9%,Author's own work at Greggs (field notes 2026-11-14),2026,observed,B,First-hand; internal figure
+L06,Orders hit by a stock-out (all stores),18.0%,notebooks/01_stockout_analysis.ipynb,2026-11-14,assumed,E,Synthetic data from generate_data.py
+L07,Orders hit by a stock-out: manual vs synced stock,25.2% vs 11.1%,notebooks/01_stockout_analysis.ipynb,2026-11-14,assumed,E,Synthetic; driven by the 2.2x rule in the generator
+L08,Substitute acceptance: fits preference vs not,84.6% vs 17.3%,notebooks/01_stockout_analysis.ipynb,2026-11-14,assumed,E,Synthetic; set by the 85%/15% rule
+L09,Average rating: refund vs no refund,3.23 vs 4.52,notebooks/01_stockout_analysis.ipynb,2026-11-14,assumed,E,Synthetic
+L10,Ordered again within 14 days: refund vs no refund,71.9% vs 87.1%,notebooks/01_stockout_analysis.ipynb,2026-11-14,assumed,E,Synthetic; set by the cooldown rule
