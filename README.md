@@ -8,6 +8,8 @@ customer wants** (vegan for vegan).
 It started from a real result: on a UK retailer's delivery-app orders, stopping stores from rejecting orders cut
 unfulfilled orders from 4% to 0.9%, but substitutions rose and ratings dropped. The fix belongs upstream.
 
+**Video walkthrough (4 min):** https://share.descript.com/view/YYOH8REKvTl
+
 ## What's inside
 
 | Folder | What it is |
